@@ -9,7 +9,7 @@
 class Client
 {
     public:
-        Client(int fd_, sockaddr_in socket_, const std::string &username_);
+        Client(int fd_, sockaddr_in socket_);
         Client() = delete;
         ~Client();
 

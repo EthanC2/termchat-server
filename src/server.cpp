@@ -1,39 +1,48 @@
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <strings.h>
-
 #include <iostream>
 #include <cstdio>
 #include <vector>
 #include <string>
+#include <cstring>
 #include <thread>
 #include <mutex>
 #include <functional>
+
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <strings.h>
 
 #include "include/constants.hpp"
 #include "include/error.hpp"
 #include "include/client.hpp"
 #include "include/channel.hpp"
 
-void handle_client(Channel channel, std::mutex &channel_mutex, int fd, sockaddr_in socket)
+void handle_client(Channel &channel, std::mutex &channel_mutex, int fd, sockaddr_in socket)
 {
-    Client client(fd, socket, "unknown");
+    Client client(fd, socket);
     char buffer[MSG_MAX_LEN];
     ssize_t nread;
 
     // 1. Add new client to channel
     {
-        std::lock_guard<std::mutex> guard(channel_mutex);
+        std::lock_guard<std::mutex> lock(channel_mutex);
         channel.add_client(client);
     }
 
     // 2. Echo server
     while ((nread = client.read_msg(buffer, MSG_MAX_LEN-1)) > 0)
     {
+        // 2A. Read message from client
         buffer[nread] = '\0';
-        std::cout << "[DEBUG] read: \'" << buffer << "\'\n"; 
+        std::cout << "[DEBUG: " << client.get_username() << "] read: \'" << buffer << "\'\n"; 
     
-        client.write_msg(buffer, nread);
+        // 2B. Echo message to entire server
+        {
+            std::lock_guard<std::mutex> lock(channel_mutex);
+            channel.write_msg(buffer, nread);
+        }
+        
+        //client.write_msg(buffer, nread);
+        //std::cout << "[DEBUG: " << client.get_username() << "] wrote: \'" << buffer << "\'\n"; 
     }
 }
 
@@ -67,7 +76,7 @@ int main()
         errchk( connfd = accept(listenfd, (sockaddr*) &cliaddr, &clilen), "accept");
         printf("Received connection: FD: %d\n", connfd);
 
-        threads.push_back( std::thread(handle_client, channel, std::ref(channel_mutex), connfd, cliaddr) );
+        threads.push_back( std::thread(handle_client, std::ref(channel), std::ref(channel_mutex), connfd, cliaddr) );
     }
 
     // 4. Join child threads

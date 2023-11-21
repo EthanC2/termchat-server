@@ -14,20 +14,22 @@ Channel::Channel(std::vector<std::reference_wrapper<Client>> clients_)
 
 void Channel::add_client(Client &client)
 {
+    std::cout << "Current client count: " << clients.size() << '\n';
     clients.push_back(client);
+    std::cout << "Added " << client.get_username() << " to client list. Total: " << clients.size() << " clients\n";
 
-    for (Client& c : clients)
+    int i=0;
+    for (const Client &client : clients)
     {
-        std::cout << c.get_username() << '\n';
+        std::cout << i+1 << ". " << client.get_username() << '\n';
+        ++i;
     }
 }
 
-void Channel::write_msg(const std::string &msg)
+void Channel::write_msg(const char *msg, size_t len) const
 {
-    const char *cmsg = msg.c_str();
-        
-    for (Client& client : clients)
+    for (const Client &client : clients)
     {
-        client.write_msg(cmsg, msg.length());
+        client.write_msg(msg, len);
     }
 }

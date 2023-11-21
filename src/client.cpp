@@ -8,11 +8,11 @@
 #include "include/error.hpp"
 #include "include/client.hpp"
 
-Client::Client(int fd_, sockaddr_in socket_, const std::string &username_)
+Client::Client(int fd_, sockaddr_in socket_)
 {
     fd = fd_;
     socket = socket_;
-    username = username_;
+    username = "client-" + std::to_string(fd);
 }
 
 Client::~Client()
@@ -52,4 +52,5 @@ ssize_t Client::read_msg(char *buffer, size_t maxlen) const
 void Client::write_msg(const char *msg, size_t len) const
 {
     errchk( write(fd, msg, len), "write");
+    std::cout << "[DEBUG: " << get_username() << "] wrote: \'" << msg << "\'\n";
 }
