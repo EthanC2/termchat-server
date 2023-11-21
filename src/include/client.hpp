@@ -19,7 +19,6 @@ class Client
         int get_fd() const;
         sockaddr_in get_socket() const;
         const std::string& get_username() const;
-        const std::string& get_buffer() const;
 
         void set_username(std::string name);
 

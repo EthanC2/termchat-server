@@ -1,22 +1,33 @@
-#include <sys/socket.h>
+#include <iostream>
 #include <vector>
+#include <functional>
 
-#include "client.hpp"
+#include <sys/socket.h>
 
-Channel::Channel(std::vector<Client&> clients = {})
+#include "include/client.hpp"
+#include "include/channel.hpp"
+
+Channel::Channel(std::vector<std::reference_wrapper<Client>> clients_)
 {
-    clients = clients;
+    clients = clients_;
 }
 
-void add_client(Client &client)
+void Channel::add_client(Client &client)
 {
     clients.push_back(client);
+
+    for (Client& c : clients)
+    {
+        std::cout << c.get_username() << '\n';
+    }
 }
 
-void write(const std::string &msg)
+void Channel::write_msg(const std::string &msg)
 {
+    const char *cmsg = msg.c_str();
+        
     for (Client& client : clients)
     {
-        client.write(msg);
+        client.write_msg(cmsg, msg.length());
     }
 }

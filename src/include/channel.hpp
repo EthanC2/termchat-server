@@ -2,16 +2,17 @@
 
 #include <sys/socket.h>
 #include <vector>
+#include <functional>
 
 #include "client.hpp"
 
 class Channel
 {
     public:
-        Channel(std::vector<Client&> clients = {});
+        Channel(std::vector<std::reference_wrapper<Client>> clients_ = {});
         void add_client(Client &client);
-        void write(const std::string &msg);
+        void write_msg(const std::string &msg);
 
     private:
-        std::vector<Client&> clients;
+        std::vector<std::reference_wrapper<Client>> clients;
 };

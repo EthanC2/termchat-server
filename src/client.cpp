@@ -44,10 +44,6 @@ ssize_t Client::read_msg(char *buffer, size_t maxlen) const
 {
     ssize_t nread;
 
-    std::cout << "[handler] fd = " << fd << '\n';
-    std::cout << "[handler] buffer.data() = " << buffer << '\n';
-    std::cout << "[handler] MSG_MAX_LEN = " << MSG_MAX_LEN << '\n';
-    
     errchk( nread = read(fd, buffer, maxlen), "read");
 
     return nread;

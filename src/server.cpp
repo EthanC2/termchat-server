@@ -4,40 +4,44 @@
 
 #include <iostream>
 #include <cstdio>
-#include <array>
 #include <vector>
 #include <string>
 #include <thread>
 #include <mutex>
+#include <functional>
 
 #include "include/constants.hpp"
 #include "include/error.hpp"
 #include "include/client.hpp"
+#include "include/channel.hpp"
 
-void handle_client(int fd, sockaddr_in socket)
+void handle_client(Channel channel, std::mutex &channel_mutex, int fd, sockaddr_in socket)
 {
     Client client(fd, socket, "unknown");
-    std::array<char,MSG_MAX_LEN> buffer;
+    char buffer[MSG_MAX_LEN];
     ssize_t nread;
 
-    inet_ntop(AF_INET, &socket.sin_addr.s_addr, buffer.data(), sizeof(socket));
-    printf("New connection: %s:%d with fd=%d\n", buffer.data(), socket.sin_port, fd);
-    
-      
-    while ((nread = client.read_msg(buffer.data(), MSG_MAX_LEN-1)) > 0)
+    // 1. Add new client to channel
     {
-        buffer.data()[nread] = '\0';
-        std::cout << "[DEBUG] read: \'" << buffer.data() << "\'\n"; 
+        std::lock_guard<std::mutex> guard(channel_mutex);
+        channel.add_client(client);
+    }
+
+    // 2. Echo server
+    while ((nread = client.read_msg(buffer, MSG_MAX_LEN-1)) > 0)
+    {
+        buffer[nread] = '\0';
+        std::cout << "[DEBUG] read: \'" << buffer << "\'\n"; 
     
-        client.write_msg(buffer.data(), nread);    
+        client.write_msg(buffer, nread);
     }
 }
 
 int main()
 {
     std::vector<std::thread> threads;
-    //std::mutex channel_mutex;
-    //Channel channel;
+    std::mutex channel_mutex;
+    Channel channel;
 
     sockaddr_in servaddr, cliaddr;
     socklen_t clilen = sizeof(cliaddr);
@@ -63,13 +67,13 @@ int main()
         errchk( connfd = accept(listenfd, (sockaddr*) &cliaddr, &clilen), "accept");
         printf("Received connection: FD: %d\n", connfd);
 
-        threads.push_back( std::thread(handle_client, connfd, cliaddr) );
+        threads.push_back( std::thread(handle_client, channel, std::ref(channel_mutex), connfd, cliaddr) );
     }
 
     // 4. Join child threads
-    for (auto& t : threads) 
+    for (auto& thread : threads) 
     {
-        t.join();
+        thread.join();
     }
 
     // N. Close connection
