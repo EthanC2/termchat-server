@@ -11,6 +11,8 @@ class Client
     public:
         Client(int fd_, sockaddr_in socket_);
         Client() = delete;
+        Client(Client&) = delete;
+        Client& operator=(Client&) = delete;
         ~Client();
 
         ssize_t read_msg(char *buffer, size_t maxlen) const;
